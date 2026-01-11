@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.hpp"
+#include <logger/logger.hpp>
 #include <modbus/modbus.h>
 #include <atomic>
 #include <array>
@@ -22,6 +23,7 @@ public:
     bool read_discrete_inputs(int slave_id, int start_addr, std::array<uint8_t, 8>& dest);
     bool write_coil(int slave_id, int address, bool state);
     
+    //TODO: Move stats to a separate class?
     // Statistics
     struct Stats {
         int read_success;
@@ -38,6 +40,8 @@ private:
     modbus_t* ctx_;
     bool connected_;
     mutable std::mutex mutex_;
+
+    Logger logger_;
     
     std::atomic<int> read_success_;
     std::atomic<int> read_errors_;

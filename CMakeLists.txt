@@ -84,6 +84,7 @@ message(STATUS "===============================================")
 # =====================================
 
 set(SOURCES
+    src/logger/logger.cpp 
     src/config.cpp
     src/modbus_manager.cpp
     src/mqtt_manager.cpp
@@ -92,6 +93,7 @@ set(SOURCES
 )
 
 set(HEADERS
+    include/logger/logger.hpp
     include/config.h
     include/modbus_manager.h
     include/mqtt_manager.h

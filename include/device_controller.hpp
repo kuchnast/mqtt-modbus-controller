@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.hpp"
+#include "logger/logger.hpp"
 #include "modbus_manager.hpp"
 #include "mqtt_manager.hpp"
 #include <map>
@@ -61,6 +62,8 @@ private:
     
     std::atomic<std::chrono::steady_clock::time_point> last_loop_time_;
     std::chrono::steady_clock::time_point last_stats_time_;
+
+    Logger logger_;
     
     void publish_input_state(InputState& state, bool current_state, bool force = false);
     void publish_relay_state(const RelayState& state);

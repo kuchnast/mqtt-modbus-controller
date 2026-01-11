@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.hpp"
+#include <logger/logger.hpp>
 #include <mqtt/async_client.h>
 #include <functional>
 #include <atomic>
@@ -46,6 +47,8 @@ private:
     std::atomic<int> publish_errors_;
     std::atomic<int> messages_received_;
     
+    Logger logger_; 
+
     // MQTT callback overrides
     void message_arrived(mqtt::const_message_ptr msg) override;
     void connection_lost(const std::string& cause) override;

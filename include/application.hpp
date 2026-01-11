@@ -4,6 +4,7 @@
 #include "modbus_manager.hpp"
 #include "mqtt_manager.hpp"
 #include "device_controller.hpp"
+#include "logger/logger.hpp"
 #include <memory>
 #include <atomic>
 
@@ -22,5 +23,5 @@ private:
     std::unique_ptr<MqttManager> mqtt_;
     std::unique_ptr<DeviceController> controller_;
     
-    void print_configuration() const;
+    Logger logger_;
 };

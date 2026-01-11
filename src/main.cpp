@@ -1,37 +1,41 @@
 #include "application.hpp"
+#include "logger/logger.hpp"
 #include <csignal>
-#include <iostream>
 #include <atomic>
 #include <thread>
 
 std::atomic<bool> g_running(true);
 std::atomic<bool> g_force_exit(false);
+Logger main_logger("Main");
 
 void signal_handler(int signum) {
     static int signal_count = 0;
     signal_count++;
     
-    std::cout << "\n[SIGNAL " << signum << "] ";
-    
     if (signal_count == 1) {
-        std::cout << "Shutting down gracefully... (Ctrl+C again to force)" << std::endl;
+        main_logger.info() << "Received signal " << signum << ", shutting down gracefully...";
         g_running = false;
     } else {
-        std::cout << "FORCING EXIT!" << std::endl;
+        main_logger.critical() << "Received signal " << signum << " again, FORCING EXIT!";
         g_force_exit = true;
         std::thread([]() {
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            std::cout << "Terminating process..." << std::endl;
+            main_logger.critical() << "Terminating process...";
             _exit(1);
         }).detach();
     }
 }
 
 int main(int argc, char* argv[]) {
-    std::cout << "========================================" << std::endl;
-    std::cout << "Modbus RTU ↔ MQTT Gateway v3.0" << std::endl;
-    std::cout << "Professional Edition with JSON Config" << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    // Konfiguracja logowania
+    Logger::enable_timestamps(true);
+    Logger::enable_colors(true);
+    Logger::set_global_level(LogLevel::INFO);  // Zmień na DEBUG dla debugowania
+    
+    main_logger.info() << "========================================";
+    main_logger.info() << "Modbus RTU ↔ MQTT Gateway v3.0";
+    main_logger.info() << "Professional Edition with JSON Config";
+    main_logger.info() << "========================================";
     
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
@@ -41,22 +45,24 @@ int main(int argc, char* argv[]) {
         config_file = argv[1];
     }
     
+    main_logger.debug() << "Using config file: " << config_file;
+    
     try {
         Application app(config_file);
         
         if (!app.initialize()) {
-            std::cerr << "Failed to initialize application" << std::endl;
+            main_logger.error() << "Failed to initialize application";
             return 1;
         }
         
         app.run(g_running, g_force_exit);
         app.shutdown();
         
-        std::cout << "Application terminated successfully" << std::endl;
+        main_logger.info() << "Application terminated successfully";
         return 0;
         
     } catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
+        main_logger.critical() << "Fatal error: " << e.what();
         return 1;
     }
 }

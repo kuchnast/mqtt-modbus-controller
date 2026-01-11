@@ -5,6 +5,7 @@
 
 ModbusManager::ModbusManager(const ModbusConfig& config)
     : config_(config), ctx_(nullptr), connected_(false),
+      logger_("ModbusManager"),
       read_success_(0), read_errors_(0), write_success_(0), write_errors_(0) {
 }
 
@@ -28,19 +29,19 @@ bool ModbusManager::connect() {
     );
     
     if (ctx_ == nullptr) {
-        std::cerr << "Failed to create Modbus RTU context" << std::endl;
+        logger_.critical() << "Failed to create Modbus RTU context";
         return false;
     }
     
     if (modbus_set_slave(ctx_, 1) == -1) {
-        std::cerr << "Failed to set Modbus slave" << std::endl;
+        logger_.critical() << "Failed to set Modbus slave";
         modbus_free(ctx_);
         ctx_ = nullptr;
         return false;
     }
     
     if (modbus_connect(ctx_) == -1) {
-        std::cerr << "Modbus connection failed: " << modbus_strerror(errno) << std::endl;
+        logger_.critical() << "Modbus connection failed: " << modbus_strerror(errno);
         modbus_free(ctx_);
         ctx_ = nullptr;
         return false;
@@ -59,10 +60,8 @@ bool ModbusManager::connect() {
     
     connected_ = true;
     
-    std::cout << "Modbus RTU connected: " << config_.port 
-              << " @ " << config_.baudrate << " baud" << std::endl;
-    std::cout << "  Timeouts: " << config_.response_timeout_ms << "ms response, "
-              << config_.byte_timeout_ms << "ms byte" << std::endl;
+    logger_.info() << "Modbus RTU connected: " << config_.port << " @ " << config_.baudrate << " baud"
+        << "  Timeouts: " << config_.response_timeout_ms << "ms response, " << config_.byte_timeout_ms << "ms byte";
     
     return true;
 }
@@ -114,10 +113,8 @@ bool ModbusManager::read_with_retry(int slave_id, int start_addr, std::array<uin
     static auto last_error_log = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
     if (std::chrono::duration_cast<std::chrono::seconds>(now - last_error_log).count() > 10) {
-        std::cerr << "Modbus read error: slave " << slave_id 
-                  << " addr " << start_addr << " count " << dest.size()
-                  << " (after " << config_.max_retries << " retries): "
-                  << modbus_strerror(errno) << std::endl;
+        logger_.error() << "Modbus read error: slave " << slave_id << " addr " << start_addr << " count " << dest.size()
+            << " (after " << config_.max_retries << " retries): " << modbus_strerror(errno);
         last_error_log = now;
     }
     
@@ -141,18 +138,14 @@ bool ModbusManager::write_with_retry(int slave_id, int address, bool state) {
         }
         
         if (retry < config_.max_retries - 1) {
-            std::cerr << "Modbus write error: slave " << slave_id 
-                      << " addr " << address << " (attempt " << (retry + 1)
-                      << "/" << config_.max_retries << "): "
-                      << modbus_strerror(errno) << std::endl;
+            logger_.warning() << "Modbus write error: slave " << slave_id << " addr " << address << " (attempt " << (retry + 1)
+                << "/" << config_.max_retries << "): " << modbus_strerror(errno);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
     
     write_errors_++;
-    std::cerr << "CRITICAL: Failed to write coil slave " << slave_id 
-              << " addr " << address << " after " << config_.max_retries 
-              << " attempts!" << std::endl;
+    logger_.error() << "Failed to write coil slave " << slave_id << " addr " << address << " after " << config_.max_retries << " attempts!";
     
     return false;
 }
