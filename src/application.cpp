@@ -26,9 +26,11 @@ bool Application::initialize() {
     }
     
     // Subscribe to relay commands
+    // TODO: Make mqtt subscriptions bundled with device types in config
     mqtt_->subscribe("modbus/relay/+/set");
     
     // Initialize Device Controller
+    // TODO: Make device controller initialization bundled with device types in config
     controller_ = std::make_unique<DeviceController>(
         config_->inputs(),
         config_->relays(),
@@ -42,7 +44,7 @@ bool Application::initialize() {
         controller_->handle_mqtt_command(topic, payload);
     });
     
-    std::cout << "\n✓ Application initialized successfully\n" << std::endl;
+    std::cout << "\nApplication initialized successfully\n" << std::endl;
     
     return true;
 }
@@ -72,16 +74,10 @@ void Application::run(std::atomic<bool>& running, std::atomic<bool>& force_exit)
         auto end_time = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             end_time - start_time).count();
-        
+
         int poll_interval = config_->polling().poll_interval_ms;
-        if (elapsed < poll_interval) {
-            int sleep_time = poll_interval - elapsed;
-            
-            // Sleep in small chunks to allow quick exit
-            for (int i = 0; i < sleep_time / 10 && !force_exit; i++) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-        }
+        if (elapsed < poll_interval)
+            std::this_thread::sleep_for(std::chrono::milliseconds(poll_interval - elapsed));
     }
     
     std::cout << "Main loop terminated" << std::endl;

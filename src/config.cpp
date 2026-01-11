@@ -164,5 +164,5 @@ void Config::save(const std::string& filename) const {
     }
     
     std::ofstream file(filename);
-    file << j.dump(2);
+    file << j.dump(DEFAULT_INDENT);
 }

@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include <modbus/modbus.h>
 #include <atomic>
+#include <array>
 #include <mutex>
 
 class ModbusManager {
@@ -18,7 +19,7 @@ public:
     void disconnect();
     bool is_connected() const { return connected_; }
     
-    bool read_discrete_inputs(int slave_id, int start_addr, int count, uint8_t* dest);
+    bool read_discrete_inputs(int slave_id, int start_addr, std::array<uint8_t, 8>& dest);
     bool write_coil(int slave_id, int address, bool state);
     
     // Statistics
@@ -43,6 +44,6 @@ private:
     std::atomic<int> write_success_;
     std::atomic<int> write_errors_;
     
-    bool read_with_retry(int slave_id, int start_addr, int count, uint8_t* dest);
+    bool read_with_retry(int slave_id, int start_addr, std::array<uint8_t, 8>& dest);
     bool write_with_retry(int slave_id, int address, bool state);
 };

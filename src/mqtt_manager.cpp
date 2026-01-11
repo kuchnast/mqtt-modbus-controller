@@ -42,7 +42,7 @@ bool MqttManager::connect() {
             return false;
         }
         
-        std::cout << "✓ MQTT connected" << std::endl;
+        std::cout << "MQTT connected" << std::endl;
         
         // Publish online status
         auto msg = mqtt::make_message("modbus/poller/status", "online");
@@ -72,7 +72,7 @@ void MqttManager::disconnect() {
             
             client_->disconnect()->wait_for(std::chrono::milliseconds(1000));
             
-            std::cout << "✓ MQTT disconnected" << std::endl;
+            std::cout << "MQTT disconnected" << std::endl;
         } catch (const mqtt::exception& exc) {
             std::cerr << "MQTT disconnect error: " << exc.what() << std::endl;
         }
@@ -90,7 +90,7 @@ bool MqttManager::subscribe(const std::string& topic) {
     try {
         auto subtok = client_->subscribe(topic, config_.qos);
         if (subtok->wait_for(std::chrono::milliseconds(2000))) {
-            std::cout << "✓ Subscribed: " << topic << std::endl;
+            std::cout << "Subscribed: " << topic << std::endl;
             return true;
         } else {
             std::cerr << "MQTT subscribe timeout: " << topic << std::endl;

@@ -4,6 +4,8 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 
+#define DEFAULT_INDENT 2
+
 struct ModbusConfig {
     std::string port;
     int baudrate;

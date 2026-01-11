@@ -1,4 +1,5 @@
 #include "device_controller.hpp"
+#include <array>
 #include <iostream>
 #include <thread>
 
@@ -27,11 +28,11 @@ void DeviceController::poll_inputs() {
     std::map<int, std::vector<InputState*>> inputs_by_slave;
     group_inputs_by_slave(inputs_by_slave);
     
-    uint8_t input_bits[8];
+    std::array<uint8_t, 8> input_bits;
     
     for (auto& [slave_id, slave_inputs] : inputs_by_slave) {
         // Read 8 inputs at once from this slave
-        if (modbus_.read_discrete_inputs(slave_id, 0, 8, input_bits)) {
+        if (modbus_.read_discrete_inputs(slave_id, 0, input_bits)) {
             for (auto* state : slave_inputs) {
                 bool current_state = input_bits[state->input->address];
                 publish_input_state(*state, current_state);

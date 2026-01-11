@@ -59,7 +59,7 @@ bool ModbusManager::connect() {
     
     connected_ = true;
     
-    std::cout << "✓ Modbus RTU connected: " << config_.port 
+    std::cout << "Modbus RTU connected: " << config_.port 
               << " @ " << config_.baudrate << " baud" << std::endl;
     std::cout << "  Timeouts: " << config_.response_timeout_ms << "ms response, "
               << config_.byte_timeout_ms << "ms byte" << std::endl;
@@ -79,15 +79,15 @@ void ModbusManager::disconnect() {
     connected_ = false;
 }
 
-bool ModbusManager::read_discrete_inputs(int slave_id, int start_addr, int count, uint8_t* dest) {
-    return read_with_retry(slave_id, start_addr, count, dest);
+bool ModbusManager::read_discrete_inputs(int slave_id, int start_addr, std::array<uint8_t, 8>& dest) {
+    return read_with_retry(slave_id, start_addr, dest);
 }
 
 bool ModbusManager::write_coil(int slave_id, int address, bool state) {
     return write_with_retry(slave_id, address, state);
 }
 
-bool ModbusManager::read_with_retry(int slave_id, int start_addr, int count, uint8_t* dest) {
+bool ModbusManager::read_with_retry(int slave_id, int start_addr, std::array<uint8_t, 8>& dest) {
     std::lock_guard<std::mutex> lock(mutex_);
     
     if (!connected_ || !ctx_) {
@@ -97,7 +97,7 @@ bool ModbusManager::read_with_retry(int slave_id, int start_addr, int count, uin
     for (int retry = 0; retry < config_.max_retries; retry++) {
         modbus_set_slave(ctx_, slave_id);
         
-        int rc = modbus_read_input_bits(ctx_, start_addr, count, dest);
+        int rc = modbus_read_input_bits(ctx_, start_addr, dest.size(), dest.data());
         if (rc != -1) {
             read_success_++;
             return true;
@@ -115,7 +115,7 @@ bool ModbusManager::read_with_retry(int slave_id, int start_addr, int count, uin
     auto now = std::chrono::steady_clock::now();
     if (std::chrono::duration_cast<std::chrono::seconds>(now - last_error_log).count() > 10) {
         std::cerr << "Modbus read error: slave " << slave_id 
-                  << " addr " << start_addr << " count " << count
+                  << " addr " << start_addr << " count " << dest.size()
                   << " (after " << config_.max_retries << " retries): "
                   << modbus_strerror(errno) << std::endl;
         last_error_log = now;
