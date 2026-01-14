@@ -8,11 +8,11 @@
 #include <iomanip>
 
 enum class LogLevel {
-    DEBUG = 0,
-    INFO = 1,
-    WARNING = 2,
-    ERROR = 3,
-    CRITICAL = 4
+    LEVEL_DEBUG = 0,
+    LEVEL_INFO = 1,
+    LEVEL_WARNING = 2,
+    LEVEL_ERROR = 3,
+    LEVEL_CRITICAL = 4
 };
 
 class Logger {

@@ -80,6 +80,7 @@ void DeviceController::process_relay_commands() {
     }
 }
 
+// TODO: Improve topic matching (e.g., use a map)
 void DeviceController::handle_mqtt_command(const std::string& topic, const std::string& payload) {
     // Parse relay command: "modbus/relay/{name}/set"
     const std::string prefix = "modbus/relay/";

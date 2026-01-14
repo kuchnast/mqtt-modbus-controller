@@ -27,10 +27,9 @@ void signal_handler(int signum) {
 }
 
 int main(int argc, char* argv[]) {
-    // Konfiguracja logowania
     Logger::enable_timestamps(true);
     Logger::enable_colors(true);
-    Logger::set_global_level(LogLevel::INFO);  // Zmień na DEBUG dla debugowania
+    Logger::set_global_level(LogLevel::LEVEL_DEBUG);
     
     main_logger.info() << "========================================";
     main_logger.info() << "Modbus RTU ↔ MQTT Gateway v3.0";

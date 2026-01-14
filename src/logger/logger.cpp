@@ -1,12 +1,12 @@
-#include "logger.hpp"
+#include "logger/logger.hpp"
 
-LogLevel Logger::global_level_ = LogLevel::INFO;
+LogLevel Logger::global_level_ = LogLevel::LEVEL_INFO;
 bool Logger::timestamps_enabled_ = true;
 bool Logger::colors_enabled_ = true;
 std::mutex Logger::mutex_;
 
 Logger::Logger(const std::string& context)
-    : context_(context), instance_level_(LogLevel::DEBUG) {
+    : context_(context), instance_level_(LogLevel::LEVEL_DEBUG) {
 }
 
 void Logger::set_global_level(LogLevel level) {
@@ -38,23 +38,23 @@ void Logger::enable_colors(bool enable) {
 }
 
 Logger::LogStream Logger::debug() {
-    return LogStream(*this, LogLevel::DEBUG);
+    return LogStream(*this, LogLevel::LEVEL_DEBUG);
 }
 
 Logger::LogStream Logger::info() {
-    return LogStream(*this, LogLevel::INFO);
+    return LogStream(*this, LogLevel::LEVEL_INFO);
 }
 
 Logger::LogStream Logger::warning() {
-    return LogStream(*this, LogLevel::WARNING);
+    return LogStream(*this, LogLevel::LEVEL_WARNING);
 }
 
 Logger::LogStream Logger::error() {
-    return LogStream(*this, LogLevel::ERROR);
+    return LogStream(*this, LogLevel::LEVEL_ERROR);
 }
 
 Logger::LogStream Logger::critical() {
-    return LogStream(*this, LogLevel::CRITICAL);
+    return LogStream(*this, LogLevel::LEVEL_CRITICAL);
 }
 
 void Logger::log(LogLevel level, const std::string& message) {
@@ -82,12 +82,12 @@ std::string Logger::get_timestamp() const {
 
 std::string Logger::get_level_string(LogLevel level) const {
     switch (level) {
-        case LogLevel::DEBUG:    return "DEBUG";
-        case LogLevel::INFO:     return "INFO";
-        case LogLevel::WARNING:  return "WARNING";
-        case LogLevel::ERROR:    return "ERROR";
-        case LogLevel::CRITICAL: return "CRITICAL";
-        default:                 return "UNKNOWN";
+        case LogLevel::LEVEL_DEBUG:    return "DEBUG";
+        case LogLevel::LEVEL_INFO:     return "INFO";
+        case LogLevel::LEVEL_WARNING:  return "WARNING";
+        case LogLevel::LEVEL_ERROR:    return "ERROR";
+        case LogLevel::LEVEL_CRITICAL: return "CRITICAL";
+        default:                       return "UNKNOWN";
     }
 }
 
@@ -97,19 +97,19 @@ std::string Logger::get_level_color(LogLevel level) const {
     }
     
     switch (level) {
-        case LogLevel::DEBUG:    return "\033[36m";      // Cyan
-        case LogLevel::INFO:     return "\033[32m";      // Green
-        case LogLevel::WARNING:  return "\033[33m";      // Yellow
-        case LogLevel::ERROR:    return "\033[31m";      // Red
-        case LogLevel::CRITICAL: return "\033[1;31m";    // Bold Red
-        default:                 return "\033[0m";       // Reset
+        case LogLevel::LEVEL_DEBUG:    return "\033[36m";      // Cyan
+        case LogLevel::LEVEL_INFO:     return "\033[32m";      // Green
+        case LogLevel::LEVEL_WARNING:  return "\033[33m";      // Yellow
+        case LogLevel::LEVEL_ERROR:    return "\033[31m";      // Red
+        case LogLevel::LEVEL_CRITICAL: return "\033[1;31m";    // Bold Red
+        default:                       return "\033[0m";       // Reset
     }
 }
 
 void Logger::write_log(LogLevel level, const std::string& message) {
     std::lock_guard<std::mutex> lock(mutex_);
     
-    std::ostream& out = (level >= LogLevel::ERROR) ? std::cerr : std::cout;
+    std::ostream& out = (level >= LogLevel::LEVEL_ERROR) ? std::cerr : std::cout;
     
     if (colors_enabled_) {
         out << get_level_color(level);

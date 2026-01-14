@@ -157,7 +157,7 @@ void MqttManager::connection_lost(const std::string& cause) {
     logger_.info() << "Auto-reconnect should restore connection...";
 }
 
-void MqttManager::connected(const std::string& cause) {
+void MqttManager::connected(const std::string&) {
     logger_.info() << "MQTT reconnected successfully";
 }
 
