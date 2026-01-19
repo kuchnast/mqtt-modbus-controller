@@ -18,9 +18,8 @@ message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERS
 message(STATUS "System: ${CMAKE_SYSTEM_NAME}")
 
 # Options
-option(BUILD_TESTS "Build unit tests with GTest" OFF)
-set(BUILD_TESTS OFF)
-option(ENABLE_COVERAGE "Enable code coverage analysis" OFF)
+option(BUILD_TESTS "Build unit tests with GTest" ON)
+option(ENABLE_COVERAGE "Enable code coverage analysis" ON)
 
 # =====================================
 # Find Dependencies
@@ -49,7 +48,7 @@ else()
     message(FATAL_ERROR "paho-mqtt-cpp not found! Install: sudo apt-get install libpaho-mqttpp-dev")
 endif()
 
-# JSON library (nlohmann/json)
+# JSON library
 find_path(NLOHMANN_JSON_INCLUDE_DIR
     NAMES nlohmann/json.hpp
     PATHS /usr/include /usr/local/include
@@ -67,12 +66,22 @@ message(STATUS "✓ Found Threads")
 
 # GTest (only if building tests)
 if(BUILD_TESTS)
-    find_package(GTest)
+    find_package(GTest QUIET)
+    if(NOT GTEST_FOUND)
+        # Try to find GMock which includes GTest
+        find_package(GMock QUIET)
+        if(GMOCK_FOUND)
+            set(GTEST_FOUND TRUE)
+            set(GTEST_INCLUDE_DIRS ${GMOCK_INCLUDE_DIRS})
+            set(GTEST_LIBRARIES ${GMOCK_LIBRARIES})
+        endif()
+    endif()
+    
     if(GTEST_FOUND)
-        message(STATUS "✓ Found GTest: ${GTEST_VERSION}")
+        message(STATUS "✓ Found GTest(${GTEST_VERSION})/GMock(${GMOCK_VERSION})")
         enable_testing()
     else()
-        message(WARNING "GTest not found! Tests will not be built. Install: sudo apt-get install libgtest-dev")
+        message(WARNING "GTest/GMock not found! Tests will not be built.")
         set(BUILD_TESTS OFF)
     endif()
 endif()
@@ -94,11 +103,13 @@ set(SOURCES
 
 set(HEADERS
     include/logger/logger.hpp
-    include/config.h
-    include/modbus_manager.h
-    include/mqtt_manager.h
-    include/device_controller.h
-    include/application.h
+    include/config.hpp
+    include/modbus_manager.hpp
+    include/i_modbus_manager.hpp
+    include/i_mqtt_manager.hpp
+    include/mqtt_manager.hpp
+    include/device_controller.hpp
+    include/application.hpp
 )
 
 # =====================================
@@ -149,40 +160,54 @@ message(STATUS "Main executable: modbus_poller")
 if(BUILD_TESTS AND GTEST_FOUND)
     message(STATUS "Building tests enabled")
     
+    # Mock headers
+    set(MOCK_HEADERS
+        tests/mocks/modbus_manager_mock.hpp
+        tests/mocks/mqtt_manager_mock.hpp
+    )
+    
+    # Test sources
+    set(TEST_SOURCES
+        tests/test_config.cpp
+        tests/test_device_controller.cpp
+        tests/test_edge_cases.cpp
+        tests/run_tests.cpp
+    )
+    
     # Test executable
     add_executable(modbus_tests
-        tests/test_config.cpp
-        tests/test_modbus_manager.cpp
-        tests/test_mqtt_manager.cpp
-        tests/test_device_controller.cpp
+        ${MOCK_HEADERS}
+        ${TEST_SOURCES}
         ${SOURCES}
     )
     
     target_include_directories(modbus_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/mocks
         ${MODBUS_INCLUDE_DIRS}
         ${PAHO_MQTT_CPP_INCLUDE_DIR}
         ${NLOHMANN_JSON_INCLUDE_DIR}
         ${GTEST_INCLUDE_DIRS}
     )
     
+    message(STATUS "${GMOCK_LIBRARIES}")
+
     target_link_libraries(modbus_tests PRIVATE
         ${MODBUS_LIBRARIES}
         ${PAHO_MQTT_CPP_LIBRARY}
+        paho-mqtt3as
         Threads::Threads
-        GTest::GTest
-        GTest::Main
+        ${GTEST_LIBRARIES}
+        GTest::gmock
     )
     
     target_compile_options(modbus_tests PRIVATE
         -Wall
         -Wextra
         -Wpedantic
+        -Wno-unused-parameter
+        -g
     )
-    
-    # Add tests to CTest
-    include(GoogleTest)
-    gtest_discover_tests(modbus_tests)
     
     # Coverage (if enabled)
     if(ENABLE_COVERAGE)
@@ -191,7 +216,25 @@ if(BUILD_TESTS AND GTEST_FOUND)
         target_link_options(modbus_tests PRIVATE --coverage)
     endif()
     
+    # Add tests to CTest
+    include(GoogleTest)
+    gtest_discover_tests(modbus_tests)
+    
+    # Custom test targets
+    add_custom_target(test-verbose
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/modbus_tests --gtest_color=yes
+        DEPENDS modbus_tests
+        COMMENT "Running tests with verbose output"
+    )
+    
+    add_custom_target(test-filter
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/modbus_tests --gtest_filter=*
+        DEPENDS modbus_tests
+        COMMENT "Running filtered tests"
+    )
+    
     message(STATUS "Test executable: modbus_tests")
+    message(STATUS "Run with: make test or ./modbus_tests")
 else()
     message(STATUS "Tests disabled (BUILD_TESTS=${BUILD_TESTS})")
 endif()
@@ -236,14 +279,14 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 find_program(CLANG_FORMAT clang-format)
 if(CLANG_FORMAT)
     add_custom_target(format
-        COMMAND ${CLANG_FORMAT} -i ${SOURCES} ${HEADERS} src/main.cpp
+        COMMAND ${CLANG_FORMAT} -i ${SOURCES} ${HEADERS} src/main.cpp ${TEST_SOURCES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Formatting source code with clang-format"
     )
     message(STATUS "Target 'format' available (clang-format found)")
 endif()
 
-# Custom target: clean-all (deep clean)
+# Custom target: clean-all (deep clean)f
 add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}
     COMMENT "Removing entire build directory"
@@ -258,6 +301,8 @@ add_custom_target(install-deps
         libpaho-mqttpp-dev 
         nlohmann-json3-dev
         libgtest-dev
+        libgmock-dev
+        cmake
     COMMENT "Installing system dependencies"
 )
 
@@ -300,8 +345,10 @@ message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "===============================================")
 message(STATUS "Available targets:")
 message(STATUS "  make                - Build main executable")
+if(BUILD_TESTS)
 message(STATUS "  make modbus_tests   - Build test executable (if enabled)")
 message(STATUS "  make test           - Run tests (if enabled)")
+endif()
 message(STATUS "  make install        - Install to system")
 message(STATUS "  make package        - Create installation package")
 if(CLANG_FORMAT)

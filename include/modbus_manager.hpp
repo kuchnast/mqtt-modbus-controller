@@ -1,39 +1,41 @@
 #pragma once
 
 #include "config.hpp"
-#include <logger/logger.hpp>
+#include "i_modbus_manager.hpp"
+#include "logger/logger.hpp"
 #include <modbus/modbus.h>
 #include <atomic>
 #include <array>
 #include <mutex>
 
-class ModbusManager {
+struct ModbusManagerStats{
+    int read_success;
+    int read_errors;
+    int write_success;
+    int write_errors;
+
+    ModbusManagerStats();
+    ModbusManagerStats(int rs, int re, int ws, int we);
+};
+
+class ModbusManager : public IModbusManager {
 public:
     explicit ModbusManager(const ModbusConfig& config);
-    ~ModbusManager();
+    virtual ~ModbusManager();
     
     // Prevent copying
     ModbusManager(const ModbusManager&) = delete;
     ModbusManager& operator=(const ModbusManager&) = delete;
     
-    bool connect();
-    void disconnect();
-    bool is_connected() const { return connected_; }
+    bool connect() override;
+    void disconnect() override;
+    bool is_connected() const override { return connected_; }
     
-    bool read_discrete_inputs(int slave_id, int start_addr, std::array<uint8_t, 8>& dest);
-    bool write_coil(int slave_id, int address, bool state);
+    virtual bool read_discrete_inputs(int slave_id, int start_addr, std::array<uint8_t, 8>& dest) override;
+    virtual bool write_coil(int slave_id, int address, bool state) override;
     
-    //TODO: Move stats to a separate class?
-    // Statistics
-    struct Stats {
-        int read_success;
-        int read_errors;
-        int write_success;
-        int write_errors;
-    };
-    
-    Stats get_stats() const;
-    void reset_stats();
+    std::unique_ptr<ModbusManagerStats> get_stats() const override;
+    void reset_stats() override;
     
 private:
     ModbusConfig config_;

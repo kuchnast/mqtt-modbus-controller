@@ -1,18 +1,24 @@
 #pragma once
 
 #include "config.hpp"
-#include <logger/logger.hpp>
+#include "i_mqtt_manager.hpp"
+#include "logger/logger.hpp"
 #include <mqtt/async_client.h>
-#include <functional>
 #include <atomic>
 #include <mutex>
 
-using MqttMessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
+struct MqttManagerStats {
+    int publish_success;
+    int publish_errors;
+    int messages_received;
 
-class MqttManager : public mqtt::callback {
+    MqttManagerStats(int ps,int pe,int mr);
+};
+
+class MqttManager : public mqtt::callback, public IMqttManager {
 public:
     explicit MqttManager(const MqttConfig& config);
-    ~MqttManager();
+    virtual ~MqttManager();
     
     // Prevent copying
     MqttManager(const MqttManager&) = delete;
@@ -22,19 +28,12 @@ public:
     void disconnect();
     bool is_connected() const;
     
-    bool subscribe(const std::string& topic);
-    bool publish(const std::string& topic, const std::string& payload, bool retained = true);
+    bool virtual subscribe(const std::string& topic);
+    bool virtual publish(const std::string& topic, const std::string& payload, bool retained = true);
     
     void set_message_callback(MqttMessageCallback callback);
     
-    // Statistics
-    struct Stats {
-        int publish_success;
-        int publish_errors;
-        int messages_received;
-    };
-    
-    Stats get_stats() const;
+    std::unique_ptr<MqttManagerStats> get_stats() const;
     void reset_stats();
     
 private:

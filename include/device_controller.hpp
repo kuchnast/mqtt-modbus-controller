@@ -14,8 +14,8 @@ public:
         const std::vector<DigitalInput>& inputs,
         const std::vector<Relay>& relays,
         const PollingConfig& polling_config,
-        ModbusManager& modbus,
-        MqttManager& mqtt
+        IModbusManager& modbus,
+        IMqttManager& mqtt
     );
     
     void poll_inputs();
@@ -57,8 +57,8 @@ private:
     std::mutex queue_mutex_;
     
     PollingConfig polling_config_;
-    ModbusManager& modbus_;
-    MqttManager& mqtt_;
+    IModbusManager& modbus_;
+    IMqttManager& mqtt_;
     
     std::atomic<std::chrono::steady_clock::time_point> last_loop_time_;
     std::chrono::steady_clock::time_point last_stats_time_;

@@ -3,6 +3,14 @@
 #include <thread>
 #include <cstring>
 
+ModbusManagerStats::ModbusManagerStats() 
+    : read_success(0), read_errors(0), write_success(0), write_errors(0){
+    }
+
+ModbusManagerStats::ModbusManagerStats(int rs,int re,int ws,int we) 
+    : read_success(rs), read_errors(re), write_success(ws), write_errors(we){
+    }
+
 ModbusManager::ModbusManager(const ModbusConfig& config)
     : config_(config), ctx_(nullptr), connected_(false),
       logger_("ModbusManager"),
@@ -150,13 +158,13 @@ bool ModbusManager::write_with_retry(int slave_id, int address, bool state) {
     return false;
 }
 
-ModbusManager::Stats ModbusManager::get_stats() const {
-    return {
+std::unique_ptr<ModbusManagerStats> ModbusManager::get_stats() const {
+    return std::make_unique<ModbusManagerStats>(
         read_success_.load(),
         read_errors_.load(),
         write_success_.load(),
         write_errors_.load()
-    };
+    );
 }
 
 void ModbusManager::reset_stats() {

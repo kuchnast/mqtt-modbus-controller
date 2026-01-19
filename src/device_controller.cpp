@@ -7,8 +7,8 @@ DeviceController::DeviceController(
     const std::vector<DigitalInput>& inputs,
     const std::vector<Relay>& relays,
     const PollingConfig& polling_config,
-    ModbusManager& modbus,
-    MqttManager& mqtt
+    IModbusManager& modbus,
+    IMqttManager& mqtt
 ) : polling_config_(polling_config), modbus_(modbus), mqtt_(mqtt),
     last_loop_time_(std::chrono::steady_clock::now()),
     last_stats_time_(std::chrono::steady_clock::now()),
@@ -115,18 +115,18 @@ void DeviceController::print_statistics() {
     auto modbus_stats = modbus_.get_stats();
     auto mqtt_stats = mqtt_.get_stats();
     
-    int total_reads = modbus_stats.read_success + modbus_stats.read_errors;
-    int total_writes = modbus_stats.write_success + modbus_stats.write_errors;
-    int total_mqtt = mqtt_stats.publish_success + mqtt_stats.publish_errors;
+    int total_reads = modbus_stats->read_success + modbus_stats->read_errors;
+    int total_writes = modbus_stats->write_success + modbus_stats->write_errors;
+    int total_mqtt = mqtt_stats->publish_success + mqtt_stats->publish_errors;
     
     logger_.debug() << "===== STATISTICS =====";
-    logger_.debug() << "Modbus Reads: " << modbus_stats.read_success << "/" << total_reads 
-        << (total_reads > 0 ? " (" + std::to_string(100.0 * modbus_stats.read_success / total_reads) + "%)" : "");
-    logger_.debug() << "Modbus Writes: " << modbus_stats.write_success << "/" << total_writes
-        << (total_writes > 0 ? " (" + std::to_string(100.0 * modbus_stats.write_success / total_writes) + "%)" : "");
-    logger_.debug() << "MQTT Publishes: " << mqtt_stats.publish_success << "/" << total_mqtt
-        << (total_mqtt > 0 ? " (" + std::to_string(100.0 * mqtt_stats.publish_success / total_mqtt) + "%)" : "");
-    logger_.debug() << "MQTT Messages Received: " << mqtt_stats.messages_received;
+    logger_.debug() << "Modbus Reads: " << modbus_stats->read_success << "/" << total_reads 
+        << (total_reads > 0 ? " (" + std::to_string(100.0 * modbus_stats->read_success / total_reads) + "%)" : "");
+    logger_.debug() << "Modbus Writes: " << modbus_stats->write_success << "/" << total_writes
+        << (total_writes > 0 ? " (" + std::to_string(100.0 * modbus_stats->write_success / total_writes) + "%)" : "");
+    logger_.debug() << "MQTT Publishes: " << mqtt_stats->publish_success << "/" << total_mqtt
+        << (total_mqtt > 0 ? " (" + std::to_string(100.0 * mqtt_stats->publish_success / total_mqtt) + "%)" : "");
+    logger_.debug() << "MQTT Messages Received: " << mqtt_stats->messages_received;
     
     modbus_.reset_stats();
     mqtt_.reset_stats();

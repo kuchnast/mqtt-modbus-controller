@@ -1,5 +1,9 @@
 #include "mqtt_manager.hpp"
 
+MqttManagerStats::MqttManagerStats(int ps,int pe,int mr)
+    : publish_success(ps), publish_errors(pe), messages_received(mr){
+    }
+
 MqttManager::MqttManager(const MqttConfig& config)
     : config_(config), 
       publish_success_(0), 
@@ -161,12 +165,12 @@ void MqttManager::connected(const std::string&) {
     logger_.info() << "MQTT reconnected successfully";
 }
 
-MqttManager::Stats MqttManager::get_stats() const {
-    return {
+std::unique_ptr<MqttManagerStats> MqttManager::get_stats() const {
+    return std::make_unique<MqttManagerStats>(
         publish_success_.load(),
         publish_errors_.load(),
         messages_received_.load()
-    };
+    );
 }
 
 void MqttManager::reset_stats() {
