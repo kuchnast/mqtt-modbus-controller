@@ -214,6 +214,27 @@ if(BUILD_TESTS AND GTEST_FOUND)
         message(STATUS "Code coverage enabled")
         target_compile_options(modbus_tests PRIVATE --coverage)
         target_link_options(modbus_tests PRIVATE --coverage)
+        add_custom_target(coverage
+            COMMAND ${CMAKE_CTEST_COMMAND}
+            COMMAND lcov
+                --capture
+                --directory .
+                --output-file coverage.info
+                --ignore-errors inconsistent,unused
+            COMMAND lcov
+                --remove coverage.info
+                '/usr/*'
+                '*/tests/*'
+                '*gtest*'
+                '*gmock*'
+                --output-file coverage.cleaned.info
+                --ignore-errors inconsistent,unused
+            COMMAND genhtml
+                coverage.cleaned.info
+                --output-directory coverage
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report"
+        )
     endif()
     
     # Add tests to CTest
@@ -286,9 +307,10 @@ if(CLANG_FORMAT)
     message(STATUS "Target 'format' available (clang-format found)")
 endif()
 
-# Custom target: clean-all (deep clean)f
+# Custom target: clean-all (deep clean)
 add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}
     COMMENT "Removing entire build directory"
 )
 
@@ -353,6 +375,9 @@ message(STATUS "  make install        - Install to system")
 message(STATUS "  make package        - Create installation package")
 if(CLANG_FORMAT)
 message(STATUS "  make format         - Format source code")
+endif()
+if(ENABLE_COVERAGE)
+message(STATUS "  make coverage       - Generate code coverage report")
 endif()
 message(STATUS "  make clean-all      - Deep clean")
 message(STATUS "  make install-deps   - Install dependencies (Ubuntu/Debian)")
