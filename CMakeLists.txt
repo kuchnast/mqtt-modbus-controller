@@ -300,7 +300,7 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 find_program(CLANG_FORMAT clang-format)
 if(CLANG_FORMAT)
     add_custom_target(format
-        COMMAND ${CLANG_FORMAT} -i ${SOURCES} ${HEADERS} src/main.cpp ${TEST_SOURCES}
+        COMMAND ${CLANG_FORMAT} -i -style=.clang_format ${SOURCES} ${HEADERS} src/main.cpp ${TEST_SOURCES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Formatting source code with clang-format"
     )

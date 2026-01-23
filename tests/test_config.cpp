@@ -1,10 +1,11 @@
 #include "config.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 
 class ConfigTest : public ::testing::Test {
-protected:
+ protected:
   void SetUp() override { test_config_file_ = "test_config.json"; }
 
   void TearDown() override {
@@ -116,8 +117,7 @@ TEST_F(ConfigTest, LoadValidConfig) {
 }
 
 TEST_F(ConfigTest, LoadNonExistentFile) {
-  EXPECT_THROW(
-      { Config config("non_existent_file.json"); }, std::runtime_error);
+  EXPECT_THROW({ Config config("non_existent_file.json"); }, std::runtime_error);
 }
 
 TEST_F(ConfigTest, DefaultValues) {

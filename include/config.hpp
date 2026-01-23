@@ -16,7 +16,7 @@ struct ModbusConfig {
   int byte_timeout_ms;
   int max_retries;
 
-  static ModbusConfig from_json(const nlohmann::json &j);
+  static ModbusConfig from_json(const nlohmann::json& j);
 };
 
 struct MqttConfig {
@@ -29,7 +29,7 @@ struct MqttConfig {
   int keep_alive_sec;
   int operation_timeout_ms;
 
-  static MqttConfig from_json(const nlohmann::json &j);
+  static MqttConfig from_json(const nlohmann::json& j);
 };
 
 struct DigitalInput {
@@ -38,7 +38,7 @@ struct DigitalInput {
   std::string name;
   std::string mqtt_topic;
 
-  static DigitalInput from_json(const nlohmann::json &j);
+  static DigitalInput from_json(const nlohmann::json& j);
 };
 
 struct Relay {
@@ -48,7 +48,7 @@ struct Relay {
   std::string mqtt_command_topic;
   std::string mqtt_state_topic;
 
-  static Relay from_json(const nlohmann::json &j);
+  static Relay from_json(const nlohmann::json& j);
 };
 
 struct PollingConfig {
@@ -57,27 +57,31 @@ struct PollingConfig {
   int max_commands_per_cycle;
   int watchdog_timeout_sec;
 
-  static PollingConfig from_json(const nlohmann::json &j);
+  static PollingConfig from_json(const nlohmann::json& j);
 };
 
 class Config {
-public:
-  explicit Config(const std::string &filename);
+ public:
+  explicit Config(const std::string& filename);
 
-  const ModbusConfig &modbus() const { return modbus_; }
-  const MqttConfig &mqtt() const { return mqtt_; }
-  const PollingConfig &polling() const { return polling_; }
-  const std::vector<DigitalInput> &inputs() const { return inputs_; }
-  const std::vector<Relay> &relays() const { return relays_; }
+  const ModbusConfig& modbus() const { return modbus_; }
 
-  void save(const std::string &filename) const;
+  const MqttConfig& mqtt() const { return mqtt_; }
 
-private:
+  const PollingConfig& polling() const { return polling_; }
+
+  const std::vector<DigitalInput>& inputs() const { return inputs_; }
+
+  const std::vector<Relay>& relays() const { return relays_; }
+
+  void save(const std::string& filename) const;
+
+ private:
   ModbusConfig modbus_;
   MqttConfig mqtt_;
   PollingConfig polling_;
   std::vector<DigitalInput> inputs_;
   std::vector<Relay> relays_;
 
-  void load(const std::string &filename);
+  void load(const std::string& filename);
 };

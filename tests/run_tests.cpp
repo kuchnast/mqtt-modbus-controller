@@ -1,7 +1,8 @@
 #include "logger/logger.hpp"
+
 #include <gtest/gtest.h>
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   Logger::set_global_level(LogLevel::LEVEL_DEBUG);
   Logger::enable_timestamps(false);
   Logger::enable_colors(true);

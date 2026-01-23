@@ -3,17 +3,14 @@
 MqttManagerStats::MqttManagerStats(int ps, int pe, int mr)
     : publish_success(ps), publish_errors(pe), messages_received(mr) {}
 
-MqttManager::MqttManager(const MqttConfig &config)
-    : config_(config), publish_success_(0), publish_errors_(0),
-      messages_received_(0), logger_("MqttManager") {
+MqttManager::MqttManager(const MqttConfig& config)
+    : config_(config), publish_success_(0), publish_errors_(0), messages_received_(0), logger_("MqttManager") {
 
-  client_ = std::make_unique<mqtt::async_client>(config_.broker_address,
-                                                 config_.client_id);
+  client_ = std::make_unique<mqtt::async_client>(config_.broker_address, config_.client_id);
 
   client_->set_callback(*this);
 
-  logger_.debug() << "MqttManager created for broker: "
-                  << config_.broker_address;
+  logger_.debug() << "MqttManager created for broker: " << config_.broker_address;
 }
 
 MqttManager::~MqttManager() {
@@ -36,8 +33,7 @@ bool MqttManager::connect() {
       logger_.debug() << "Using authentication for user: " << config_.username;
     }
 
-    mqtt::message willmsg("modbus/poller/status", "offline", config_.qos,
-                          config_.retained);
+    mqtt::message willmsg("modbus/poller/status", "offline", config_.qos, config_.retained);
     mqtt::will_options will(willmsg);
     connOpts.set_will(will);
 
@@ -59,7 +55,7 @@ bool MqttManager::connect() {
 
     return true;
 
-  } catch (const mqtt::exception &exc) {
+  } catch (const mqtt::exception& exc) {
     logger_.error() << "MQTT connection error: " << exc.what();
     return false;
   }
@@ -82,7 +78,7 @@ void MqttManager::disconnect() {
       client_->disconnect()->wait_for(std::chrono::milliseconds(1000));
 
       logger_.info() << "MQTT disconnected";
-    } catch (const mqtt::exception &exc) {
+    } catch (const mqtt::exception& exc) {
       logger_.error() << "MQTT disconnect error: " << exc.what();
     }
   }
@@ -93,7 +89,7 @@ bool MqttManager::is_connected() const {
   return client_ && client_->is_connected();
 }
 
-bool MqttManager::subscribe(const std::string &topic) {
+bool MqttManager::subscribe(const std::string& topic) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   try {
@@ -105,14 +101,13 @@ bool MqttManager::subscribe(const std::string &topic) {
       logger_.error() << "Subscribe timeout for topic: " << topic;
       return false;
     }
-  } catch (const mqtt::exception &exc) {
+  } catch (const mqtt::exception& exc) {
     logger_.error() << "Subscribe error: " << exc.what();
     return false;
   }
 }
 
-bool MqttManager::publish(const std::string &topic, const std::string &payload,
-                          bool retained) {
+bool MqttManager::publish(const std::string& topic, const std::string& payload, bool retained) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   try {
@@ -122,8 +117,7 @@ bool MqttManager::publish(const std::string &topic, const std::string &payload,
 
     auto tok = client_->publish(msg);
 
-    if (tok->wait_for(
-            std::chrono::milliseconds(config_.operation_timeout_ms))) {
+    if (tok->wait_for(std::chrono::milliseconds(config_.operation_timeout_ms))) {
       publish_success_++;
       logger_.debug() << "Published to " << topic << ": " << payload;
       return true;
@@ -133,7 +127,7 @@ bool MqttManager::publish(const std::string &topic, const std::string &payload,
       return false;
     }
 
-  } catch (const mqtt::exception &exc) {
+  } catch (const mqtt::exception& exc) {
     publish_errors_++;
     logger_.error() << "Publish error (" << topic << "): " << exc.what();
     return false;
@@ -146,27 +140,24 @@ void MqttManager::set_message_callback(MqttMessageCallback callback) {
 
 void MqttManager::message_arrived(mqtt::const_message_ptr msg) {
   messages_received_++;
-  logger_.debug() << "Message received on " << msg->get_topic() << ": "
-                  << msg->to_string();
+  logger_.debug() << "Message received on " << msg->get_topic() << ": " << msg->to_string();
 
   if (message_callback_) {
     message_callback_(msg->get_topic(), msg->to_string());
   }
 }
 
-void MqttManager::connection_lost(const std::string &cause) {
+void MqttManager::connection_lost(const std::string& cause) {
   logger_.warning() << "MQTT connection lost: " << cause;
   logger_.info() << "Auto-reconnect should restore connection...";
 }
 
-void MqttManager::connected(const std::string &) {
+void MqttManager::connected(const std::string&) {
   logger_.info() << "MQTT reconnected successfully";
 }
 
 std::unique_ptr<MqttManagerStats> MqttManager::get_stats() const {
-  return std::make_unique<MqttManagerStats>(publish_success_.load(),
-                                            publish_errors_.load(),
-                                            messages_received_.load());
+  return std::make_unique<MqttManagerStats>(publish_success_.load(), publish_errors_.load(), messages_received_.load());
 }
 
 void MqttManager::reset_stats() {

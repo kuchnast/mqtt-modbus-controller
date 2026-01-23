@@ -1,8 +1,9 @@
 #include "config.hpp"
+
 #include <fstream>
 #include <stdexcept>
 
-ModbusConfig ModbusConfig::from_json(const nlohmann::json &j) {
+ModbusConfig ModbusConfig::from_json(const nlohmann::json& j) {
   ModbusConfig config;
   config.port = j.value("port", "/dev/ttyUSB0");
   config.baudrate = j.value("baudrate", 9600);
@@ -19,7 +20,7 @@ ModbusConfig ModbusConfig::from_json(const nlohmann::json &j) {
   return config;
 }
 
-MqttConfig MqttConfig::from_json(const nlohmann::json &j) {
+MqttConfig MqttConfig::from_json(const nlohmann::json& j) {
   MqttConfig config;
   config.broker_address = j.value("broker_address", "tcp://localhost:1883");
   config.client_id = j.value("client_id", "modbus_poller");
@@ -33,7 +34,7 @@ MqttConfig MqttConfig::from_json(const nlohmann::json &j) {
   return config;
 }
 
-DigitalInput DigitalInput::from_json(const nlohmann::json &j) {
+DigitalInput DigitalInput::from_json(const nlohmann::json& j) {
   DigitalInput input;
   input.slave_id = j.at("slave_id").get<int>();
   input.address = j.at("address").get<int>();
@@ -48,7 +49,7 @@ DigitalInput DigitalInput::from_json(const nlohmann::json &j) {
   return input;
 }
 
-Relay Relay::from_json(const nlohmann::json &j) {
+Relay Relay::from_json(const nlohmann::json& j) {
   Relay relay;
   relay.slave_id = j.at("slave_id").get<int>();
   relay.address = j.at("address").get<int>();
@@ -69,7 +70,7 @@ Relay Relay::from_json(const nlohmann::json &j) {
   return relay;
 }
 
-PollingConfig PollingConfig::from_json(const nlohmann::json &j) {
+PollingConfig PollingConfig::from_json(const nlohmann::json& j) {
   PollingConfig config;
   config.poll_interval_ms = j.value("poll_interval_ms", 400);
   config.refresh_interval_sec = j.value("refresh_interval_sec", 10);
@@ -79,9 +80,11 @@ PollingConfig PollingConfig::from_json(const nlohmann::json &j) {
   return config;
 }
 
-Config::Config(const std::string &filename) { load(filename); }
+Config::Config(const std::string& filename) {
+  load(filename);
+}
 
-void Config::load(const std::string &filename) {
+void Config::load(const std::string& filename) {
   std::ifstream file(filename);
   if (!file.is_open()) {
     throw std::runtime_error("Cannot open config file: " + filename);
@@ -94,16 +97,16 @@ void Config::load(const std::string &filename) {
   mqtt_ = MqttConfig::from_json(j.at("mqtt"));
   polling_ = PollingConfig::from_json(j.at("polling"));
 
-  for (const auto &item : j.at("digital_inputs")) {
+  for (const auto& item : j.at("digital_inputs")) {
     inputs_.push_back(DigitalInput::from_json(item));
   }
 
-  for (const auto &item : j.at("relays")) {
+  for (const auto& item : j.at("relays")) {
     relays_.push_back(Relay::from_json(item));
   }
 }
 
-void Config::save(const std::string &filename) const {
+void Config::save(const std::string& filename) const {
   nlohmann::json j;
 
   // Modbus config
@@ -134,7 +137,7 @@ void Config::save(const std::string &filename) const {
 
   // Digital inputs
   j["digital_inputs"] = nlohmann::json::array();
-  for (const auto &input : inputs_) {
+  for (const auto& input : inputs_) {
     j["digital_inputs"].push_back({{"slave_id", input.slave_id},
                                    {"address", input.address},
                                    {"name", input.name},
@@ -143,7 +146,7 @@ void Config::save(const std::string &filename) const {
 
   // Relays
   j["relays"] = nlohmann::json::array();
-  for (const auto &relay : relays_) {
+  for (const auto& relay : relays_) {
     j["relays"].push_back({{"slave_id", relay.slave_id},
                            {"address", relay.address},
                            {"name", relay.name},

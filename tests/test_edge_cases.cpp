@@ -1,6 +1,7 @@
 #include "device_controller.hpp"
 #include "modbus_manager_mock.hpp"
 #include "mqtt_manager_mock.hpp"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -10,7 +11,7 @@ using ::testing::Return;
 using ::testing::SetArrayArgument;
 
 class EdgeCaseTest : public ::testing::Test {
-protected:
+ protected:
   void SetUp() override {
     polling_config_.poll_interval_ms = 100;
     polling_config_.refresh_interval_sec = 5;
@@ -32,8 +33,7 @@ TEST_F(EdgeCaseTest, EmptyConfiguration) {
 
   // Should not crash with empty config
   EXPECT_NO_THROW({
-    DeviceController controller(empty_inputs, empty_relays, polling_config_,
-                                *mock_modbus_, *mock_mqtt_);
+    DeviceController controller(empty_inputs, empty_relays, polling_config_, *mock_modbus_, *mock_mqtt_);
     controller.poll_inputs();
     controller.process_relay_commands();
   });
@@ -60,16 +60,13 @@ TEST_F(EdgeCaseTest, SingleInputSingleRelay) {
   std::array<uint8_t, 8> state = {1, 0, 0, 0, 0, 0, 0, 0};
 
   EXPECT_CALL(*mock_modbus_, read_discrete_inputs(1, 0, _))
-      .WillOnce([state](int /*slave_id*/, int /*start_addr*/,
-                        std::array<uint8_t, 8> &dest) {
+      .WillOnce([state](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state;
         return true;
       });
-  EXPECT_CALL(*mock_mqtt_, publish("test/input", "ON", true))
-      .WillOnce(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish("test/input", "ON", true)).WillOnce(Return(true));
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
   controller.poll_inputs();
 }
 
@@ -89,19 +86,15 @@ TEST_F(EdgeCaseTest, MaxInputsPerSlave) {
   std::array<uint8_t, 8> state = {1, 1, 1, 1, 1, 1, 1, 1};
 
   EXPECT_CALL(*mock_modbus_, read_discrete_inputs(1, 0, _))
-      .WillOnce([state](int /*slave_id*/, int /*start_addr*/,
-                               std::array<uint8_t, 8> &dest) {
+      .WillOnce([state](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state;
         return true;
       });
 
   // Should publish 8 times
-  EXPECT_CALL(*mock_mqtt_, publish(_, "ON", true))
-      .Times(8)
-      .WillRepeatedly(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish(_, "ON", true)).Times(8).WillRepeatedly(Return(true));
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
   controller.poll_inputs();
 }
 
@@ -118,16 +111,13 @@ TEST_F(EdgeCaseTest, VeryLongTopicNames) {
   std::array<uint8_t, 8> state = {1, 0, 0, 0, 0, 0, 0, 0};
 
   EXPECT_CALL(*mock_modbus_, read_discrete_inputs(1, 0, _))
-      .WillOnce([state](int /*slave_id*/, int /*start_addr*/,
-                        std::array<uint8_t, 8> &dest) {
+      .WillOnce([state](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state;
         return true;
       });
-  EXPECT_CALL(*mock_mqtt_, publish(input.mqtt_topic, "ON", true))
-      .WillOnce(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish(input.mqtt_topic, "ON", true)).WillOnce(Return(true));
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
   controller.poll_inputs();
 }
 
@@ -143,8 +133,7 @@ TEST_F(EdgeCaseTest, SpecialCharactersInNames) {
   relay.mqtt_state_topic = "test/relay/state";
   relays.push_back(relay);
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
 
   // Should handle special characters without crashing
   EXPECT_NO_THROW({ controller.handle_mqtt_command("test/relay/set", "ON"); });
@@ -166,33 +155,28 @@ TEST_F(EdgeCaseTest, RapidStateChanges) {
   std::array<uint8_t, 8> state_on = {1, 0, 0, 0, 0, 0, 0, 0};
 
   EXPECT_CALL(*mock_modbus_, read_discrete_inputs(1, 0, _))
-      .WillOnce([state_off](int /*slave_id*/, int /*start_addr*/,
-                            std::array<uint8_t, 8> &dest) {
+      .WillOnce([state_off](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state_off;
         return true;
       })
-      .WillOnce([state_on](int /*slave_id*/, int /*start_addr*/,
-                           std::array<uint8_t, 8> &dest) {
+      .WillOnce([state_on](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state_on;
         return true;
       })
-      .WillOnce([state_off](int /*slave_id*/, int /*start_addr*/,
-                            std::array<uint8_t, 8> &dest) {
+      .WillOnce([state_off](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state_off;
         return true;
       })
-      .WillOnce([state_on](int /*slave_id*/, int /*start_addr*/,
-                                  std::array<uint8_t, 8> &dest) {
+      .WillOnce([state_on](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state_on;
         return true;
       });
 
   EXPECT_CALL(*mock_mqtt_, publish("test/input", _, true))
-      .Times(3) // Should publish only on state changes
+      .Times(3)  // Should publish only on state changes
       .WillRepeatedly(Return(true));
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
 
   for (int i = 0; i < 4; i++) {
     controller.poll_inputs();
@@ -212,13 +196,11 @@ TEST_F(EdgeCaseTest, ZeroSlaveId) {
   relay.mqtt_state_topic = "test/relay/state";
   relays.push_back(relay);
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
   controller.handle_mqtt_command("modbus/relay/broadcast_relay/set", "ON");
 
   EXPECT_CALL(*mock_modbus_, write_coil(0, 0, true)).WillOnce(Return(true));
-  EXPECT_CALL(*mock_mqtt_, publish("test/relay/state", "ON", true))
-      .WillOnce(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish("test/relay/state", "ON", true)).WillOnce(Return(true));
 
   controller.process_relay_commands();
 }
@@ -237,16 +219,13 @@ TEST_F(EdgeCaseTest, MaxSlaveId) {
   std::array<uint8_t, 8> state = {1, 0, 0, 0, 0, 0, 0, 0};
 
   EXPECT_CALL(*mock_modbus_, read_discrete_inputs(247, 0, _))
-      .WillOnce([state](int /*slave_id*/, int /*start_addr*/,
-                        std::array<uint8_t, 8> &dest) {
+      .WillOnce([state](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state;
         return true;
       });
-  EXPECT_CALL(*mock_mqtt_, publish("test/input", "ON", true))
-      .WillOnce(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish("test/input", "ON", true)).WillOnce(Return(true));
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
   controller.poll_inputs();
 }
 
@@ -255,7 +234,7 @@ TEST_F(EdgeCaseTest, MaxAddress) {
   std::vector<DigitalInput> inputs;
   DigitalInput input;
   input.slave_id = 1;
-  input.address = 7; // Last valid address in 8-bit array
+  input.address = 7;  // Last valid address in 8-bit array
   input.name = "max_addr_input";
   input.mqtt_topic = "test/input";
   inputs.push_back(input);
@@ -264,16 +243,13 @@ TEST_F(EdgeCaseTest, MaxAddress) {
   std::array<uint8_t, 8> state = {0, 0, 0, 0, 0, 0, 0, 1};
 
   EXPECT_CALL(*mock_modbus_, read_discrete_inputs(1, 0, _))
-      .WillOnce([state](int /*slave_id*/, int /*start_addr*/,
-                               std::array<uint8_t, 8> &dest) {
+      .WillOnce([state](int /*slave_id*/, int /*start_addr*/, std::array<uint8_t, 8>& dest) {
         dest = state;
         return true;
       });
-  EXPECT_CALL(*mock_mqtt_, publish("test/input", "ON", true))
-      .WillOnce(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish("test/input", "ON", true)).WillOnce(Return(true));
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
   controller.poll_inputs();
 }
 
@@ -289,15 +265,13 @@ TEST_F(EdgeCaseTest, EmptyPayload) {
   relay.mqtt_state_topic = "test/relay/state";
   relays.push_back(relay);
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
 
   // Empty payload should be treated as OFF
   controller.handle_mqtt_command("modbus/relay/relay1/set", "");
 
   EXPECT_CALL(*mock_modbus_, write_coil(1, 0, false)).WillOnce(Return(true));
-  EXPECT_CALL(*mock_mqtt_, publish("test/relay/state", "OFF", true))
-      .WillOnce(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish("test/relay/state", "OFF", true)).WillOnce(Return(true));
 
   controller.process_relay_commands();
 }
@@ -314,15 +288,12 @@ TEST_F(EdgeCaseTest, VeryLongPayload) {
   relay.mqtt_state_topic = "test/relay/state";
   relays.push_back(relay);
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
 
   // Very long payload - should handle gracefully
   std::string long_payload(10000, 'x');
 
-  EXPECT_NO_THROW({
-    controller.handle_mqtt_command("modbus/relay/relay1/set", long_payload);
-  });
+  EXPECT_NO_THROW({ controller.handle_mqtt_command("modbus/relay/relay1/set", long_payload); });
 }
 
 TEST_F(EdgeCaseTest, CommandQueueOverflow) {
@@ -339,8 +310,7 @@ TEST_F(EdgeCaseTest, CommandQueueOverflow) {
 
   polling_config_.max_commands_per_cycle = 1;
 
-  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_,
-                              *mock_mqtt_);
+  DeviceController controller(inputs, relays, polling_config_, *mock_modbus_, *mock_mqtt_);
 
   // Queue 100 commands
   for (int i = 0; i < 100; i++) {
@@ -348,12 +318,8 @@ TEST_F(EdgeCaseTest, CommandQueueOverflow) {
   }
 
   // Should process only 1 per cycle
-  EXPECT_CALL(*mock_modbus_, write_coil(1, 0, true))
-      .Times(1)
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*mock_mqtt_, publish("test/relay/state", "ON", true))
-      .Times(1)
-      .WillRepeatedly(Return(true));
+  EXPECT_CALL(*mock_modbus_, write_coil(1, 0, true)).Times(1).WillRepeatedly(Return(true));
+  EXPECT_CALL(*mock_mqtt_, publish("test/relay/state", "ON", true)).Times(1).WillRepeatedly(Return(true));
 
   controller.process_relay_commands();
 }

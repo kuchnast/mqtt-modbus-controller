@@ -1,5 +1,6 @@
 #include "application.hpp"
 #include "logger/logger.hpp"
+
 #include <atomic>
 #include <csignal>
 #include <thread>
@@ -13,12 +14,10 @@ void signal_handler(int signum) {
   signal_count++;
 
   if (signal_count == 1) {
-    main_logger.info() << "Received signal " << signum
-                       << ", shutting down gracefully...";
+    main_logger.info() << "Received signal " << signum << ", shutting down gracefully...";
     g_running = false;
   } else {
-    main_logger.critical() << "Received signal " << signum
-                           << " again, FORCING EXIT!";
+    main_logger.critical() << "Received signal " << signum << " again, FORCING EXIT!";
     g_force_exit = true;
     std::thread([]() {
       std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -28,7 +27,7 @@ void signal_handler(int signum) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   Logger::enable_timestamps(true);
   Logger::enable_colors(true);
   Logger::set_global_level(LogLevel::LEVEL_DEBUG);
@@ -62,7 +61,7 @@ int main(int argc, char *argv[]) {
     main_logger.info() << "Application terminated successfully";
     return 0;
 
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     main_logger.critical() << "Fatal error: " << e.what();
     return 1;
   }
